@@ -1,22 +1,11 @@
+// Dependencies
 const fs = require('fs'); 
 const http = require('http'); 
 const url = require('url'); 
 
-// Functions
-const replaceTemplate = (temp, product) => {
-    let output = temp.replace(/{%PRODUCT%}/g, product.productName);
-    output = output.replace(/{%EMOJI%}/g, product.image);
-    output = output.replace(/{%PRICE%}/g, product.price);
-    output = output.replace(/{%NUTRIENTS%}/g, product.nutrients);
-    output = output.replace(/{%QUANTITY%}/g, product.quantity);
-    output = output.replace(/{%DESCRIPTION%}/g, product.description);
-    output = output.replace(/{%ID%}/g, product.id);
-    output = output.replace(/{%LOCATION%}/g, product.from);
-    if(!product.organic) {
-        output = output.replace(/{%NOT_ORGANIC%}/g, 'not-organic');
-    }
-    return output;
-}
+const slugify = require('slugify')
+
+const replace_template = require(`./modules/replace_template`)
 
 // Data
 const tempOverview = fs.readFileSync(`${__dirname}/overview.html`, 'utf-8');
@@ -24,13 +13,14 @@ const tempCard = fs.readFileSync(`${__dirname}/card.html`, 'utf-8');
 const tempProduct = fs.readFileSync(`${__dirname}/product.html`, 'utf-8');
 const data = fs.readFileSync(`${__dirname}/data.json`, 'utf-8');
 const productData = JSON.parse(data);
-const cardsHtml = productData.map(el => replaceTemplate(tempCard, el)).toString();
+const slugs = productData.map(el => slugify(el.productName, {lower: true}))
+console.log(slugs)
+const cardsHtml = productData.map(el => replace_template(tempCard, el, slugs)).toString();
 const overviewHTML = tempOverview.replace(/{%PRODUCT_CARDS%}/g, cardsHtml);
 
-//Server
+// Server
 const server = http.createServer((req, res) => {
     const pathName = url.parse(req.url, true)['pathname'];
-    const ID = url.parse(req.url, true)['query']['id']
 
     // Overview Page
     if(pathName === '/' || pathName === '/overview') {
@@ -40,7 +30,9 @@ const server = http.createServer((req, res) => {
     // Products Page
     } else if (pathName === '/products') {
         res.writeHead(200, {'Content-type': 'text/html'});
-        productHTML = replaceTemplate(tempProduct, productData[ID]).toString();       
+        const ID = slugs.indexOf(url.parse(req.url, true)['query']['id'])
+        // const ID = url.parse(req.url, true)['query'][idIndex]
+        productHTML = replace_template(tempProduct, productData[ID], slugs).toString();       
         res.end(productHTML);
     
     // API

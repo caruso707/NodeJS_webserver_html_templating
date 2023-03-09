@@ -1,0 +1,14 @@
+{
+  "name": "node-farm",
+  "version": "1.0.0",
+  "description": "learning node.js",
+  "main": "http_web_server_example.js",
+  "scripts": {
+    "start": "nodemon http_web_server_example.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "slugify": "^1.6.5"
+  }
+}
